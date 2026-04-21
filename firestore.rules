@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 0.1 Connection test document
+    match /test/connection {
+      allow read: if true;
+    }
+
+    // Phase 3: Primitive Definitions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // User Profile Validation
+    function isValidUser(data, userId) {
+      return data.userId == userId &&
+             data.email is string && data.email.size() <= 256 &&
+             (!('businessName' in data) || (data.businessName is string && data.businessName.size() <= 200));
+    }
+
+    // Client Validation
+    function isValidClient(data, userId) {
+      return data.userId == userId &&
+             data.name is string && data.name.size() <= 200 &&
+             data.email is string && data.email.size() <= 256 &&
+             (!('tags' in data) || (data.tags is list && data.tags.size() <= 50));
+    }
+
+    // Invoice Validation
+    function isValidInvoice(data, userId) {
+      return data.userId == userId &&
+             data.total is number &&
+             data.items is list && data.items.size() <= 100 &&
+             (data.items.size() == 0 || (data.items[0] is map)) &&
+             data.status in ['draft', 'sent', 'paid', 'overdue'];
+    }
+
+    // User Profile & Settings
+    match /users/{userId} {
+      allow get: if true; // Public access for branding on invoice pages
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(incoming(), userId);
+      allow update: if isOwner(userId) && isValidUser(incoming(), userId);
+      
+      // Clients subcollection
+      match /clients/{clientId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidClient(incoming(), userId);
+        allow update: if isOwner(userId) && isValidClient(incoming(), userId);
+        allow delete: if isOwner(userId);
+      }
+      
+      // Invoices subcollection
+      match /invoices/{invoiceId} {
+        allow get: if true; // Public portal access
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidInvoice(incoming(), userId);
+        allow update: if (isOwner(userId) && isValidInvoice(incoming(), userId)) || (
+          // Simulation: Allow public status update to 'paid' via Portal
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) &&
+          incoming().status == 'paid'
+        );
+        allow delete: if isOwner(userId);
+      }
+      
+      // Recurring Invoices subcollection
+      match /recurring/{recurringId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Expenses subcollection
+      match /expenses/{expenseId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Quotes subcollection
+      match /quotes/{quoteId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Templates subcollection
+      match /templates/{templateId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+  }
+}

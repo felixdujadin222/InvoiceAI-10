@@ -1,0 +1,199 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and settings",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "businessName": { "type": "string" },
+        "email": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "currency": { "type": "string" },
+        "taxRate": { "type": "number" },
+        "paymentGateways": {
+          "type": "object",
+          "properties": {
+            "stripe": { "type": "boolean" },
+            "paystack": { "type": "boolean" },
+            "flutterwave": { "type": "boolean" },
+            "paypal": { "type": "boolean" },
+            "manualBank": { "type": "boolean" },
+            "crypto": { "type": "boolean" }
+          }
+        },
+        "bankDetails": {
+          "type": "object",
+          "properties": {
+            "bankName": { "type": "string" },
+            "accountName": { "type": "string" },
+            "accountNumber": { "type": "string" },
+            "swiftCode": { "type": "string" },
+            "iban": { "type": "string" }
+          }
+        },
+        "cryptoWallets": {
+          "type": "object",
+          "properties": {
+            "btc": { "type": "string" },
+            "eth": { "type": "string" },
+            "sol": { "type": "string" }
+          }
+        },
+        "customPaymentLink": { "type": "string" },
+        "remindersEnabled": { "type": "boolean" },
+        "reminderIntervals": { 
+          "type": "array", 
+          "items": { "type": "number" },
+          "description": "Days overdue to send reminders (e.g. [3, 7, 14])"
+        },
+        "twilioSid": { "type": "string" },
+        "twilioToken": { "type": "string" },
+        "twilioPhone": { "type": "string" }
+      },
+      "required": ["userId", "email"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Client information",
+      "type": "object",
+      "properties": {
+        "clientId": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "category": { "type": "string", "description": "e.g., Retainer, One-off" },
+        "status": { "type": "string", "enum": ["active", "inactive", "lead", "archived"] },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "activityLog": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "action": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "email"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Invoice details",
+      "type": "object",
+      "properties": {
+        "invoiceId": { "type": "string" },
+        "userId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "invoiceNumber": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "sent", "paid", "overdue"] },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "description": { "type": "string" },
+              "quantity": { "type": "number" },
+              "rate": { "type": "number" },
+              "amount": { "type": "number" }
+            }
+          }
+        },
+        "subtotal": { "type": "number" },
+        "tax": { "type": "number" },
+        "total": { "type": "number" },
+        "notes": { "type": "string" },
+        "remindersEnabled": { "type": "boolean" },
+        "lastReminderSentAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "clientId", "invoiceNumber", "status", "items", "total"]
+    },
+    "RecurringInvoice": {
+      "title": "Recurring Invoice",
+      "description": "Template for automatically generated invoices",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "frequency": { "type": "string", "enum": ["weekly", "monthly", "custom"] },
+        "interval": { "type": "number", "description": "Number of days if custom" },
+        "nextRunDate": { "type": "string", "format": "date-time" },
+        "items": { "type": "array" },
+        "taxRate": { "type": "number" },
+        "total": { "type": "number" },
+        "active": { "type": "boolean" },
+        "lastRunDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "clientId", "frequency", "nextRunDate", "items", "active"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Business expense record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "merchant": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "notes": { "type": "string" },
+        "receiptUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "merchant", "amount", "date"]
+    },
+    "Quote": {
+      "title": "Quote",
+      "description": "Project estimate or proposal",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "quoteNumber": { "type": "string" },
+        "items": { "type": "array" },
+        "total": { "type": "number" },
+        "currency": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "clientId", "quoteNumber", "items", "total"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User settings collection"
+    },
+    "/users/{userId}/clients/{clientId}": {
+      "schema": "Client",
+      "description": "Client records for a user"
+    },
+    "/users/{userId}/invoices/{invoiceId}": {
+      "schema": "Invoice",
+      "description": "Invoice collection for a user"
+    },
+    "/users/{userId}/recurring/{recurringId}": {
+      "schema": "RecurringInvoice",
+      "description": "Recurring invoice templates"
+    },
+    "/users/{userId}/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "Expense records for a user"
+    },
+    "/users/{userId}/quotes/{quoteId}": {
+      "schema": "Quote",
+      "description": "Quote records for a user"
+    }
+  }
+}
