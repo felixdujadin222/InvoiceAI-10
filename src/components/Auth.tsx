@@ -13,15 +13,13 @@ import {
   Lock, 
   ArrowRight, 
   Loader2, 
-  CheckCircle, 
   AlertCircle,
-  Chrome,
-  UserPlus,
   LogIn,
-  X
 } from 'lucide-react';
-import { cn } from '../lib/utils';
+
 import { useNavigate, Link } from 'react-router-dom';
+import { formatAuthError } from '../lib/authHelper';
+import ThemeToggle from './ThemeToggle';
 
 interface AuthProps {
   onSuccess: (message: string) => void;
@@ -30,7 +28,7 @@ interface AuthProps {
 export default function Auth({ onSuccess }: AuthProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errorInfo, setErrorInfo] = useState<{ message: string; isFirebaseSetupError: boolean } | null>(null);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -41,14 +39,14 @@ export default function Auth({ onSuccess }: AuthProps) {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
-    setError(null);
+    setErrorInfo(null);
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
       onSuccess('Logged in successfully with Google');
       navigate('/app');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setErrorInfo(formatAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -57,7 +55,7 @@ export default function Auth({ onSuccess }: AuthProps) {
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
+    setErrorInfo(null);
 
     try {
       if (isLogin) {
@@ -71,8 +69,8 @@ export default function Auth({ onSuccess }: AuthProps) {
         onSuccess('Account created successfully!');
       }
       navigate('/app');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setErrorInfo(formatAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -80,6 +78,9 @@ export default function Auth({ onSuccess }: AuthProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-500">
+      {/* Colour mode switch - available before signing in */}
+      <ThemeToggle className="absolute top-6 right-6 z-30" />
+
       {/* Background Orbs */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-blue-100 dark:bg-blue-900/10 rounded-full blur-3xl opacity-30 -translate-x-1/2 -translate-y-1/2" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-100 dark:bg-purple-900/10 rounded-full blur-3xl opacity-30 translate-x-1/2 translate-y-1/2" />
@@ -89,8 +90,8 @@ export default function Auth({ onSuccess }: AuthProps) {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl shadow-blue-100/50 dark:shadow-none p-8 sm:p-10 relative z-10 border border-gray-100 dark:border-zinc-800"
       >
-        <div className="text-center space-y-2 mb-10">
-          <Link to="/" className="inline-flex items-center gap-2 mb-6 group">
+        <div className="text-center space-y-2 mb-8">
+          <Link to="/" className="inline-flex items-center gap-2 mb-4 group">
             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-200 dark:shadow-none group-hover:scale-110 transition-transform">I</div>
             <span className="text-xl font-black text-gray-900 dark:text-white tracking-tight font-display">InvoiceFlow AI</span>
           </Link>
@@ -136,7 +137,7 @@ export default function Auth({ onSuccess }: AuthProps) {
                       className="w-full pl-12 pr-6 py-4 bg-gray-50/50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:bg-white dark:focus:bg-zinc-800 focus:border-blue-500/20 outline-none transition-all font-bold text-gray-900 dark:text-white"
                       value={formData.displayName}
                       onChange={(e) => setFormData({...formData, displayName: e.target.value})}
-                      placeholder="John Doe"
+                      placeholder="Alex Rivers"
                     />
                   </div>
                 </motion.div>
@@ -153,7 +154,7 @@ export default function Auth({ onSuccess }: AuthProps) {
                   className="w-full pl-12 pr-6 py-4 bg-gray-50/50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:bg-white dark:focus:bg-zinc-800 focus:border-blue-500/20 outline-none transition-all font-bold text-gray-900 dark:text-white"
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  placeholder="name@company.com"
+                  placeholder="alex@company.com"
                 />
               </div>
             </div>
@@ -174,14 +175,16 @@ export default function Auth({ onSuccess }: AuthProps) {
             </div>
 
             <AnimatePresence>
-              {error && (
+              {errorInfo && (
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-2xl flex items-start gap-3 text-red-600 dark:text-red-400 text-xs font-bold leading-relaxed"
+                  className="p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-2xl space-y-3"
                 >
-                  <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                  {error}
+                  <div className="flex items-start gap-3 text-red-600 dark:text-red-400 text-xs font-bold leading-relaxed">
+                    <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                    <span>{errorInfo.message}</span>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -202,13 +205,16 @@ export default function Auth({ onSuccess }: AuthProps) {
             </button>
           </form>
 
-          <div className="pt-6 text-center">
+          <div className="pt-4 text-center">
             <button
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setErrorInfo(null);
+              }}
               className="text-xs font-bold text-gray-500 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             >
               {isLogin ? (
-                <>Don't have an account? <span className="text-blue-600 dark:text-blue-400 underline underline-offset-4">Create one for free</span></>
+                <>Don&apos;t have an account? <span className="text-blue-600 dark:text-blue-400 underline underline-offset-4">Create one for free</span></>
               ) : (
                 <>Already have an account? <span className="text-blue-600 dark:text-blue-400 underline underline-offset-4">Sign in here</span></>
               )}
