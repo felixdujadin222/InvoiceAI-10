@@ -1,30 +1,35 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { Search, Filter, MoreVertical, ExternalLink, Download, Loader2, X, FileText, Calendar, User, DollarSign, CheckCircle2, ChevronDown, Trash2, ArrowUpDown, ChevronUp, MessageSquare, Eye, Zap } from 'lucide-react';
+import { Search, ExternalLink, Download, Loader2, X, FileText, DollarSign, CheckCircle2, ChevronDown, Trash2, ArrowUpDown, ChevronUp, MessageSquare, Eye, Zap, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { dbService } from '../services/dbService';
 import { auth } from '../lib/firebase';
+import { getLocalAuthUser } from '../lib/authHelper';
 import { generateInvoicePDF } from '../services/pdfService';
+import type { InvoiceItem } from '../services/geminiService';
 import { cn } from '../lib/utils';
 import { QRCodeSVG } from 'qrcode.react';
 import { Share2, Copy, Link as LinkIcon } from 'lucide-react';
 import { format } from 'date-fns';
+import { toJsDate } from '../lib/utils';
+import type { InvoiceData, ClientData, UserSettings } from '../services/dbService';
 
 interface InvoiceListProps {
   showToast?: (message: string, type: 'success' | 'info' | 'error') => void;
+  onEditInvoice?: (invoice: InvoiceData) => void;
 }
 
-export default function InvoiceList({ showToast }: InvoiceListProps) {
-  const [invoices, setInvoices] = useState<any[]>([]);
-  const [clients, setClients] = useState<any[]>([]);
+export default function InvoiceList({ showToast, onEditInvoice }: InvoiceListProps) {
+  const [invoices, setInvoices] = useState<InvoiceData[]>([]);
+  const [clients, setClients] = useState<ClientData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userSettings, setUserSettings] = useState<any>(null);
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'sent' | 'paid' | 'overdue'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
   const [isBatchMenuOpen, setIsBatchMenuOpen] = useState(false);
-  const [sharingInvoice, setSharingInvoice] = useState<any>(null);
+  const [sharingInvoice, setSharingInvoice] = useState<InvoiceData | null>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [isUpdatingInvoice, setIsUpdatingInvoice] = useState(false);
   const [isCustomPayment, setIsCustomPayment] = useState(false);
@@ -51,24 +56,42 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchData = async () => {
-      if (!auth.currentUser) return;
       try {
+        // Firebase Auth restores its session asynchronously; auth.currentUser can be
+        // null for a moment after mount. Wait for it (bounded by a timeout) so we
+        // don't bail out and leave the table skeleton spinning forever.
+        if (!auth.currentUser) {
+          await new Promise<void>((resolve) => {
+            const unsubscribe = auth.onAuthStateChanged(() => {
+              unsubscribe();
+              resolve();
+            });
+            setTimeout(resolve, 4000);
+          });
+        }
+        // Fall back to the local-session uid (same fallback App.tsx uses) so the
+        // list still loads when Firebase Auth is unreachable or slow to resolve.
+        const uid = auth.currentUser?.uid || getLocalAuthUser()?.uid;
+        if (!uid || cancelled) return;
         const [invoiceData, settingsData, clientsData] = await Promise.all([
-          dbService.getInvoices(auth.currentUser.uid),
-          dbService.getUserSettings(auth.currentUser.uid),
-          dbService.getClients(auth.currentUser.uid)
+          dbService.getInvoices(uid),
+          dbService.getUserSettings(uid),
+          dbService.getClients(uid)
         ]);
+        if (cancelled) return;
         setInvoices(invoiceData);
         setUserSettings(settingsData);
         setClients(clientsData);
       } catch (error) {
         console.error("Failed to fetch data", error);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchData();
+    return () => { cancelled = true; };
   }, []);
 
   const getCurrencySymbol = (code: string) => {
@@ -76,7 +99,13 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
     return symbols[code] || '$';
   };
 
-  const handleWhatsAppReminder = (invoice: any) => {
+  // Compute dates for selected invoice to avoid Date.now() in render
+  const selectedInvoiceCreatedAt = toJsDate(selectedInvoice?.createdAt);
+  const selectedInvoiceDueDate = selectedInvoice?.dueDate 
+    ? new Date(selectedInvoice.dueDate) 
+    : new Date();
+
+  const handleWhatsAppReminder = (invoice: InvoiceData) => {
     const client = clients.find(c => c.name === invoice.clientName || c.id === invoice.clientId);
     const phone = client?.phone || '';
     
@@ -91,10 +120,10 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
     window.open(whatsappUrl, '_blank');
   };
 
-  const handleDownload = (invoice: any) => {
+  const handleDownload = (invoice: InvoiceData) => {
     generateInvoicePDF({
       invoiceNumber: invoice.invoiceNumber,
-      date: new Date(invoice.createdAt?.toDate?.() || Date.now()).toLocaleDateString(),
+      date: invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
       dueDate: new Date(invoice.dueDate).toLocaleDateString(),
       clientName: invoice.clientName,
       clientEmail: invoice.clientEmail || 'client@example.com',
@@ -104,8 +133,13 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
       discount: invoice.discount || 0,
       total: invoice.total || 0,
       currency: invoice.currency || 'USD',
+      status: invoice.status,
+      notes: invoice.notes,
+      paymentMethod: invoice.paymentMethod,
       businessName: userSettings?.businessName || 'InvoiceFlow AI',
-      businessEmail: auth.currentUser?.email || undefined,
+      businessEmail: userSettings?.businessEmail || auth.currentUser?.email || undefined,
+      businessPhone: userSettings?.businessPhone,
+      businessAddress: userSettings?.businessAddress || userSettings?.address,
       logoUrl: userSettings?.logoUrl,
       terms: userSettings?.terms,
       bankDetails: userSettings?.bankDetails
@@ -122,10 +156,12 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
   };
 
   const filteredInvoices = useMemo(() => {
-    let result = invoices.filter(invoice => {
-      const matchesSearch = 
-        invoice.invoiceNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        invoice.clientName?.toLowerCase().includes(searchQuery.toLowerCase());
+    const result = invoices.filter(invoice => {
+      const q = searchQuery.toLowerCase();
+      const matchesSearch =
+        invoice.invoiceNumber?.toLowerCase().includes(q) ||
+        invoice.clientName?.toLowerCase().includes(q) ||
+        invoice.clientEmail?.toLowerCase().includes(q);
       const matchesStatus = statusFilter === 'all' || invoice.status?.toLowerCase() === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -137,8 +173,8 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
 
         // Normalizing data for comparison
         if (sortConfig.key === 'dueDate' || sortConfig.key === 'createdAt') {
-          aValue = new Date(aValue?.toDate?.() || aValue).getTime();
-          bValue = new Date(bValue?.toDate?.() || bValue).getTime();
+          aValue = new Date(String(aValue)).getTime();
+          bValue = new Date(String(bValue)).getTime();
         }
         
         if (typeof aValue === 'string') aValue = aValue.toLowerCase();
@@ -260,10 +296,10 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
     setIsBatchMenuOpen(false);
   };
 
-  const handlePreviewPDF = (invoice: any) => {
+  const handlePreviewPDF = (invoice: InvoiceData) => {
     const url = generateInvoicePDF({
       invoiceNumber: invoice.invoiceNumber,
-      date: new Date(invoice.createdAt?.toDate?.() || Date.now()).toLocaleDateString(),
+      date: invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
       dueDate: new Date(invoice.dueDate).toLocaleDateString(),
       clientName: invoice.clientName,
       clientEmail: invoice.clientEmail || 'client@example.com',
@@ -273,19 +309,24 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
       discount: invoice.discount || 0,
       total: invoice.total || 0,
       currency: invoice.currency || 'USD',
+      status: invoice.status,
+      notes: invoice.notes,
+      paymentMethod: invoice.paymentMethod,
       businessName: userSettings?.businessName,
       businessEmail: userSettings?.businessEmail,
+      businessPhone: userSettings?.businessPhone,
+      businessAddress: userSettings?.businessAddress || userSettings?.address,
       logoUrl: userSettings?.logoUrl,
       terms: userSettings?.terms,
       bankDetails: userSettings?.bankDetails
     }, 'preview');
     
     if (url) {
-      setPdfPreviewUrl(url as any as string);
+      setPdfPreviewUrl(url.toString());
     }
   };
 
-  const getPublicUrl = (invoice: any) => {
+  const getPublicUrl = (invoice: InvoiceData) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     return `${origin}/p/${auth.currentUser?.uid}/${invoice.id}`;
   };
@@ -335,7 +376,7 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
           {statuses.map(status => (
             <button
               key={status.id}
-              onClick={() => setStatusFilter(status.id as any)}
+              onClick={() => setStatusFilter(status.id as typeof statusFilter)}
               className={cn(
                 "px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap",
                 statusFilter === status.id
@@ -442,8 +483,27 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
       <div className="bg-white dark:bg-transparent md:bg-transparent md:border-none border border-gray-200 dark:border-zinc-800 rounded-xl md:rounded-none shadow-sm md:shadow-none overflow-hidden">
         {filteredInvoices.length === 0 ? (
           <div className="py-20 text-center bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm">
-            <div className="text-gray-400 dark:text-zinc-500 mb-2 font-bold uppercase tracking-widest text-xs">No matching invoices</div>
-            <p className="text-sm text-gray-500 dark:text-zinc-400">Try adjusting your filters or search terms.</p>
+            {invoices.length > 0 ? (
+              <>
+                <div className="text-gray-400 dark:text-zinc-500 mb-2 font-bold uppercase tracking-widest text-xs">No matching invoices</div>
+                <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
+                  You have {invoices.length} invoice{invoices.length === 1 ? '' : 's'}, but none match your current search or filters.
+                </p>
+                {(searchQuery || statusFilter !== 'all') && (
+                  <button
+                    onClick={() => { setSearchQuery(''); setStatusFilter('all'); }}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    <X size={16} /> Clear search &amp; filters
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="text-gray-400 dark:text-zinc-500 mb-2 font-bold uppercase tracking-widest text-xs">No invoices yet</div>
+                <p className="text-sm text-gray-500 dark:text-zinc-400">Click &quot;New Invoice&quot; to create your first one.</p>
+              </>
+            )}
           </div>
         ) : (
           <>
@@ -533,7 +593,7 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
                           type="checkbox" 
                           className="rounded border-gray-300 dark:border-zinc-700 text-blue-600 focus:ring-blue-500 dark:bg-zinc-800 cursor-pointer"
                           checked={selectedInvoices.has(invoice.id)}
-                          onChange={(e) => handleSelectInvoice(invoice.id, e as any)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSelectInvoice(invoice.id, e)}
                         />
                       </td>
                       <td className="px-6 py-4">
@@ -560,6 +620,16 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
+                           <button 
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               onEditInvoice?.(invoice);
+                             }}
+                             className="p-1.5 text-purple-500 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 rounded-md transition-colors"
+                             title="Edit invoice"
+                           >
+                             <Pencil size={16} />
+                           </button>
                            <button 
                              onClick={(e) => {
                                e.stopPropagation();
@@ -622,7 +692,7 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
                           type="checkbox" 
                           className="w-6 h-6 rounded-lg border-gray-300 dark:border-zinc-700 text-blue-600 focus:ring-blue-500 dark:bg-zinc-800 cursor-pointer shadow-sm"
                           checked={selectedInvoices.has(invoice.id)}
-                          onChange={(e) => handleSelectInvoice(invoice.id, e as any)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSelectInvoice(invoice.id, e)}
                         />
                       </div>
                       <div className="min-w-0">
@@ -632,7 +702,7 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
                           <span className="text-gray-400 dark:text-zinc-500 truncate text-xs not-italic">{invoice.clientName}</span>
                         </h4>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <p className="text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Sent {format(invoice.createdAt?.toDate?.() || new Date(), 'MMM d')}</p>
+                          <p className="text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Sent {format(invoice.createdAt ? new Date(invoice.createdAt) : new Date(), 'MMM d')}</p>
                         </div>
                       </div>
                     </div>
@@ -660,7 +730,17 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-4 gap-3">
+                    <button 
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         onEditInvoice?.(invoice);
+                       }}
+                       className="flex flex-col items-center justify-center gap-2 py-3 bg-white dark:bg-zinc-800 text-purple-600 dark:text-purple-400 rounded-2xl transition-all active:scale-95 border border-gray-100 dark:border-zinc-700 shadow-sm"
+                    >
+                      <Pencil size={18} />
+                      <span className="text-[9px] font-black uppercase tracking-widest">Edit</span>
+                    </button>
                     <button 
                        onClick={(e) => {
                          e.stopPropagation();
@@ -802,6 +882,20 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {onEditInvoice && (
+                      <button
+                        onClick={() => {
+                          const inv = selectedInvoice;
+                          setSelectedInvoice(null);
+                          onEditInvoice(inv);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors"
+                        title="Edit this invoice"
+                      >
+                        <Pencil size={14} />
+                        Edit
+                      </button>
+                    )}
                     <button 
                       onClick={() => handleDownload(selectedInvoice)}
                       className="p-2 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
@@ -875,13 +969,13 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
                       <div className="space-y-1">
                         <p className="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Date Issued</p>
                         <p className="text-sm font-bold text-gray-900 dark:text-white">
-                          {new Date(selectedInvoice.createdAt?.toDate?.() || Date.now()).toLocaleDateString()}
+                          {selectedInvoiceCreatedAt.toLocaleDateString()}
                         </p>
                       </div>
                       <div className="space-y-1 mt-4">
                         <p className="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Due Date</p>
                         <p className="text-sm font-bold text-gray-900 dark:text-white">
-                          {new Date(selectedInvoice.dueDate).toLocaleDateString()}
+                          {selectedInvoiceDueDate.toLocaleDateString()}
                         </p>
                       </div>
                     </div>
@@ -916,7 +1010,7 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
                             placeholder="Custom method name"
                             defaultValue={selectedInvoice.paymentMethod}
                             onBlur={(e) => handleUpdatePaymentMethod(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleUpdatePaymentMethod((e.target as any).value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleUpdatePaymentMethod((e.target as HTMLInputElement).value)}
                           />
                         </div>
                       )}
@@ -936,7 +1030,7 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50 dark:divide-zinc-800">
-                        {(selectedInvoice.items || []).map((item: any, idx: number) => (
+                        {(selectedInvoice.items || []).map((item: InvoiceItem, idx: number) => (
                           <tr key={idx}>
                             <td className="py-4">
                               <p className="font-bold text-gray-900 dark:text-white">{item.description}</p>
@@ -1034,7 +1128,7 @@ export default function InvoiceList({ showToast }: InvoiceListProps) {
                   {selectedInvoice.notes && (
                     <div className="bg-gray-50 dark:bg-zinc-900 rounded-xl p-4">
                       <p className="text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Notes</p>
-                      <p className="text-sm text-gray-600 dark:text-zinc-400 italic">"{selectedInvoice.notes}"</p>
+                      <p className="text-sm text-gray-600 dark:text-zinc-400 italic">&ldquo;{selectedInvoice.notes}&rdquo;</p>
                     </div>
                   )}
                 </div>

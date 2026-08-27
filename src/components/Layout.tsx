@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, ReceiptText, Users, Settings, LogOut, PlusCircle, Bell, Repeat, BarChart3, Receipt, Sun, Moon, FileSearch, X } from 'lucide-react';
+import { LayoutDashboard, ReceiptText, Users, Settings, LogOut, PlusCircle, Bell, Repeat, BarChart3, Receipt, FileSearch, X } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { useTheme } from '../context/ThemeContext';
+import ThemeToggle from './ThemeToggle';
 import { motion, AnimatePresence } from 'motion/react';
+import type { AppUser } from '../lib/authHelper';
+import type { User } from 'firebase/auth';
 
 interface LayoutProps {
   children: React.ReactNode;
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  user: any;
+  user: AppUser | User | null;
   onLogout: () => void;
 }
 
 export default function Layout({ children, activeTab, setActiveTab, user, onLogout }: LayoutProps) {
-  const { theme, toggleTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const groupedNavItems = [
@@ -46,8 +47,6 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
       ]
     },
   ];
-
-  const allNavItems = groupedNavItems.flatMap(g => g.items);
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-zinc-950 overflow-hidden relative">
@@ -134,12 +133,7 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
           </h1>
           
           <div className="flex items-center gap-2 sm:gap-4">
-            <button 
-              onClick={toggleTheme}
-              className="p-2.5 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all active:scale-95"
-            >
-              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
+            <ThemeToggle />
             <button className="hidden sm:p-2.5 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all active:scale-95">
               <Bell size={20} />
             </button>

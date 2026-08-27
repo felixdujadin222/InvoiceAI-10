@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { dbService, ClientData } from '../services/dbService';
+import type { InvoiceData } from '../services/dbService';
 import { auth } from '../lib/firebase';
 import { 
   UserPlus, 
@@ -8,31 +9,44 @@ import {
   Edit2, 
   Loader2, 
   Search, 
-  Plus, 
   X,
   User,
   Trash2,
-  MoreVertical,
   ChevronDown,
   ArrowUpDown,
   MapPin,
   Calendar,
   Filter,
   Tags,
-  History,
   Download,
   Upload,
   Activity,
   CreditCard,
-  Target
+  AlertTriangle,
 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, toJsDate } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 
 type SortOption = 'name_asc' | 'name_desc' | 'newest';
 
-export default function ClientList() {
+interface ClientListProps {
+  /** Active account id. Passed down by App so Local Session (demo) users work too. */
+  userId?: string;
+  /** Optional callback wired to the global toast notification system. */
+  showToast?: (message: string, type?: 'success' | 'info' | 'error') => void;
+}
+
+export default function ClientList({ userId, showToast }: ClientListProps) {
+  // Resolve the active account: App-provided prop first, Firebase session second.
+  // Demo / Local Session logins never populate auth.currentUser, so relying on
+  // auth.currentUser alone silently broke fetching and saving on this page.
+  const effectiveUserId = userId || auth.currentUser?.uid || null;
+
+  const notify = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
+    if (showToast) showToast(message, type);
+  };
+
   const [clients, setClients] = useState<ClientData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,21 +64,25 @@ export default function ClientList() {
     phone: '',
     address: '',
     category: '',
-    status: 'active' as any,
+    status: 'active',
     tags: [] as string[]
   });
 
   const [viewHistoryClient, setViewHistoryClient] = useState<ClientData | null>(null);
   const [historyTab, setHistoryTab] = useState<'ledger' | 'activity'>('ledger');
-  const [clientInvoices, setClientInvoices] = useState<any[]>([]);
+  const [clientInvoices, setClientInvoices] = useState<InvoiceData[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [tagInput, setTagInput] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
 
   const fetchClients = async () => {
-    if (!auth.currentUser) return;
+    if (!effectiveUserId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      const data = await dbService.getClients(auth.currentUser.uid);
+      const data = await dbService.getClients(effectiveUserId);
       setClients(data);
     } catch (error) {
       console.error("Failed to fetch clients", error);
@@ -73,61 +91,79 @@ export default function ClientList() {
     }
   };
 
-  useEffect(() => {
+useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchClients();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only initial load; user identity is stable within a session
   }, []);
 
   useEffect(() => {
-    if (editingClient) {
-      setFormData({
-        name: editingClient.name,
-        email: editingClient.email,
-        phone: editingClient.phone || '',
-        address: editingClient.address || '',
-        category: editingClient.category || '',
-        status: editingClient.status || 'active',
-        tags: editingClient.tags || []
-      });
-      setShowForm(true);
-    } else {
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        address: '',
-        category: '',
-        status: 'active',
-        tags: []
-      });
-    }
+     
+    const updateForm = () => {
+      setFormError(null);
+      if (editingClient) {
+        setFormData({
+          name: editingClient.name,
+          email: editingClient.email,
+          phone: editingClient.phone || '',
+          address: editingClient.address || '',
+          category: editingClient.category || '',
+          status: editingClient.status || 'active',
+          tags: editingClient.tags || []
+        });
+        setShowForm(true);
+      } else {
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          address: '',
+          category: '',
+          status: 'active',
+          tags: []
+        });
+      }
+    };
+    updateForm();
   }, [editingClient]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth.currentUser) return;
+    setFormError(null);
+    if (!effectiveUserId) {
+      const message = 'No active session. Please sign in again.';
+      setFormError(message);
+      notify(message, 'error');
+      return;
+    }
 
     try {
       if (editingClient) {
-        await dbService.updateClient(auth.currentUser.uid, editingClient.id, formData);
-        await dbService.addClientActivity(auth.currentUser.uid, editingClient.id, {
+        await dbService.updateClient(effectiveUserId, editingClient.id, formData);
+        await dbService.addClientActivity(effectiveUserId, editingClient.id, {
           action: 'Profile Updated',
           notes: 'Manually edited client details'
         });
+        notify('Client updated successfully');
       } else {
-        await dbService.addClient(auth.currentUser.uid, formData);
+        await dbService.addClient(effectiveUserId, formData);
+        notify('Client created successfully');
       }
       setShowForm(false);
       setEditingClient(null);
       fetchClients();
     } catch (error) {
       console.error("Failed to save client", error);
+      const message = error instanceof Error ? error.message : 'Failed to save client. Please try again.';
+      setFormError(message);
+      notify(message, 'error');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!auth.currentUser) return;
+    if (!effectiveUserId) return;
     try {
-      await dbService.deleteClient(auth.currentUser.uid, id);
+      await dbService.deleteClient(effectiveUserId, id);
       setDeletingId(null);
       fetchClients();
     } catch (error) {
@@ -140,8 +176,8 @@ export default function ClientList() {
     setHistoryTab('ledger');
     setLoadingHistory(true);
     try {
-      if (!auth.currentUser) return;
-      const data = await dbService.getClientInvoices(auth.currentUser.uid, client.id);
+      if (!effectiveUserId) return;
+      const data = await dbService.getClientInvoices(effectiveUserId, client.id);
       setClientInvoices(data);
     } catch (error) {
       console.error("Failed to fetch client invoices", error);
@@ -173,7 +209,7 @@ export default function ClientList() {
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !auth.currentUser) return;
+    if (!file || !effectiveUserId) return;
 
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -183,10 +219,10 @@ export default function ClientList() {
       
       const newClients = lines.slice(1).map(line => {
         const values = line.split(',');
-        const obj: any = {};
+        const obj: Record<string, string | string[]> = {};
         headers.forEach((h, i) => {
            const key = h.toLowerCase().trim();
-           let val = values[i]?.replace(/^"|"$/g, '').trim();
+           const val = values[i]?.replace(/^"|"$/g, '').trim();
            if (key === 'tags') {
              obj[key] = val ? val.split(';') : [];
            } else {
@@ -197,7 +233,7 @@ export default function ClientList() {
       });
 
       try {
-        await dbService.batchAddClients(auth.currentUser!.uid, newClients);
+        await dbService.batchAddClients(effectiveUserId, newClients);
         alert(`Successfully imported ${newClients.length} clients`);
         fetchClients();
       } catch (err) {
@@ -225,8 +261,8 @@ export default function ClientList() {
       if (sortBy === 'name_asc') return a.name.localeCompare(b.name);
       if (sortBy === 'name_desc') return b.name.localeCompare(a.name);
       if (sortBy === 'newest') {
-        const dateA = a.createdAt?.toDate?.() || new Date(0);
-        const dateB = b.createdAt?.toDate?.() || new Date(0);
+        const dateA = toJsDate(a.createdAt);
+        const dateB = toJsDate(b.createdAt);
         return dateB.getTime() - dateA.getTime();
       }
       return 0;
@@ -455,7 +491,7 @@ export default function ClientList() {
               <div className="mt-8 flex items-center justify-between">
                  <div className="flex items-center gap-2 text-gray-300 dark:text-zinc-700">
                     <Calendar size={14} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Added {client.createdAt ? format(client.createdAt.toDate(), 'MMM yyyy') : 'Recently'}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Added {format(toJsDate(client.createdAt), 'MMM yyyy')}</span>
                  </div>
                  <button 
                    onClick={() => openHistory(client)}
@@ -686,6 +722,12 @@ export default function ClientList() {
               </div>
               
               <form onSubmit={handleSubmit} className="p-8 space-y-5">
+                {formError && (
+                  <div className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold flex items-center gap-2">
+                    <AlertTriangle size={14} className="shrink-0" />
+                    {formError}
+                  </div>
+                )}
                 <div className="space-y-1.5">
                   <label className="block text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest ml-1">Full Name / Business</label>
                   <input
@@ -738,7 +780,7 @@ export default function ClientList() {
                     <select
                       className="w-full px-6 py-4 bg-gray-50/50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:bg-white dark:focus:bg-zinc-800 focus:border-blue-500/20 outline-none transition-all font-bold text-gray-900 dark:text-white appearance-none cursor-pointer"
                       value={formData.status}
-                      onChange={(e) => setFormData({...formData, status: e.target.value as any})}
+                      onChange={(e) => setFormData({...formData, status: e.target.value as ClientData['status']})}
                     >
                       {statuses.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
                     </select>

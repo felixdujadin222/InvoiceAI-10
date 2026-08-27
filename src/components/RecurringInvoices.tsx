@@ -1,18 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { dbService } from '../services/dbService';
-import { auth } from '../lib/firebase';
+import type { RecurringInvoiceData } from '../services/dbService';
 import { Plus, Repeat, Calendar, Trash2, ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-export default function RecurringInvoices({ onNew }: { onNew: () => void }) {
-  const [recurring, setRecurring] = useState<any[]>([]);
+export default function RecurringInvoices({
+  userId,
+  onNew,
+}: {
+  userId: string;
+  onNew: () => void;
+}) {
+  const [recurring, setRecurring] = useState<RecurringInvoiceData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetch = async () => {
-      if (!auth.currentUser) return;
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
       try {
-        const data = await dbService.getRecurringInvoices(auth.currentUser.uid);
+        const data = await dbService.getRecurringInvoices(userId);
         setRecurring(data);
       } catch (err) {
         console.error(err);
@@ -21,25 +30,44 @@ export default function RecurringInvoices({ onNew }: { onNew: () => void }) {
       }
     };
     fetch();
-  }, []);
+  }, [userId]);
 
   const toggleActive = async (id: string, current: boolean) => {
-    if (!auth.currentUser) return;
+    if (!userId) return;
     try {
-      await dbService.toggleRecurringActive(auth.currentUser.uid, id, !current);
-      setRecurring(recurring.map(r => r.id === id ? { ...r, active: !current } : r));
+      await dbService.toggleRecurringActive(userId, id, !current);
+      setRecurring(recurring.map(r => (r.id === id ? { ...r, active: !current } : r)));
     } catch (err) {
       console.error(err);
     }
   };
 
-  if (loading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-blue-600" /></div>;
+  const handleDelete = async (id: string, clientName?: string) => {
+    if (!userId) return;
+    const confirmed = window.confirm(
+      `Delete recurring invoice for "${clientName || 'this client'}"?\nThis cannot be undone.`
+    );
+    if (!confirmed) return;
+    try {
+      await dbService.deleteRecurring(userId, id);
+      setRecurring(prev => prev.filter(r => r.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  if (loading)
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="animate-spin text-blue-600" />
+      </div>
+    );
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Recurring Invoices</h2>
-        <button 
+        <button
           onClick={onNew}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
         >
@@ -56,10 +84,15 @@ export default function RecurringInvoices({ onNew }: { onNew: () => void }) {
             <p className="text-sm">Automate your retainers and subscriptions.</p>
           </div>
         ) : (
-          recurring.map((item) => (
-            <div key={item.id} className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6 transition-all hover:border-blue-100 group">
+          recurring.map(item => (
+            <div
+              key={item.id}
+              className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6 transition-all hover:border-blue-100 group"
+            >
               <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-2xl transition-colors ${item.active ? 'bg-blue-50 text-blue-600 group-hover:bg-blue-100' : 'bg-gray-50 text-gray-400'}`}>
+                <div
+                  className={`p-3 rounded-2xl transition-colors ${item.active ? 'bg-blue-50 text-blue-600 group-hover:bg-blue-100' : 'bg-gray-50 text-gray-400'}`}
+                >
                   <Repeat size={24} />
                 </div>
                 <div>
@@ -75,27 +108,33 @@ export default function RecurringInvoices({ onNew }: { onNew: () => void }) {
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between sm:justify-end gap-6 pt-4 sm:pt-0 border-t sm:border-t-0 border-gray-50">
                 <div className="text-left sm:text-right">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Next Run</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
+                    Next Run
+                  </p>
                   <p className="text-sm font-bold text-gray-900">
                     {new Date(item.nextRunDate).toLocaleDateString()}
                   </p>
                 </div>
-                
+
                 <div className="flex items-center gap-4">
-                  <button 
+                  <button
                     onClick={() => toggleActive(item.id, item.active)}
                     className={cn(
-                      "transition-all active:scale-95",
+                      'transition-all active:scale-95',
                       item.active ? 'text-blue-600' : 'text-gray-300'
                     )}
                   >
                     {item.active ? <ToggleRight size={36} /> : <ToggleLeft size={36} />}
                   </button>
-                  
-                  <button className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
+
+                  <button
+                    onClick={() => handleDelete(item.id, item.clientName)}
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                    aria-label={`Delete recurring for ${item.clientName}`}
+                  >
                     <Trash2 size={18} />
                   </button>
                 </div>

@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { dbService } from '../services/dbService';
-import { Loader2, FileText, Download, CheckCircle2, AlertTriangle, ShieldCheck, CreditCard, Landmark, PenTool, X } from 'lucide-react';
+import type { InvoiceData, UserSettings } from '../services/dbService';
+import type { InvoiceItem } from '../services/geminiService';
+import { Loader2, Download, CheckCircle2, AlertTriangle, ShieldCheck, CreditCard, Landmark, X } from 'lucide-react';
+import { toJsDate } from '../lib/utils';
 
 // Simplified Signature Pad inside the component
 const SignaturePad = ({ onSave }: { onSave: (data: string) => void }) => {
@@ -78,8 +81,8 @@ import { generateInvoicePDF } from '../services/pdfService';
 
 export default function PublicInvoice() {
   const { userId, invoiceId } = useParams<{ userId: string; invoiceId: string }>();
-  const [invoice, setInvoice] = useState<any>(null);
-  const [userSettings, setUserSettings] = useState<any>(null);
+  const [invoice, setInvoice] = useState<InvoiceData | null>(null);
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPaying, setIsPaying] = useState(false);
@@ -119,7 +122,7 @@ export default function PublicInvoice() {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       await dbService.updateInvoiceStatus(userId, invoiceId, 'paid');
-      setInvoice((prev: any) => ({ ...prev, status: 'paid' }));
+      setInvoice(prev => (prev ? { ...prev, status: 'paid' } : prev));
       setPaymentSuccess(true);
     } catch (err) {
       console.error("Payment update failed", err);
@@ -147,8 +150,8 @@ export default function PublicInvoice() {
     if (!invoice) return;
     generateInvoicePDF({
       invoiceNumber: invoice.invoiceNumber,
-      date: new Date(invoice.createdAt?.toDate?.() || Date.now()).toLocaleDateString(),
-      dueDate: new Date(invoice.dueDate).toLocaleDateString(),
+      date: createdAtDate.toLocaleDateString(),
+      dueDate: dueDate.toLocaleDateString(),
       clientName: invoice.clientName,
       clientEmail: invoice.clientEmail || 'client@example.com',
       items: invoice.items || [],
@@ -157,13 +160,21 @@ export default function PublicInvoice() {
       discount: invoice.discount || 0,
       total: invoice.total || 0,
       currency: invoice.currency || 'USD',
+      status: invoice.status,
+      notes: invoice.notes,
+      paymentMethod: invoice.paymentMethod,
       businessName: userSettings?.businessName || 'InvoiceFlow AI',
       businessEmail: userSettings?.businessEmail,
+      businessPhone: userSettings?.businessPhone,
+      businessAddress: userSettings?.businessAddress || userSettings?.address,
       logoUrl: userSettings?.logoUrl,
       terms: userSettings?.terms,
       bankDetails: userSettings?.bankDetails
     });
   };
+
+  const createdAtDate = toJsDate(invoice.createdAt);
+  const dueDate = new Date(invoice.dueDate);
 
   if (loading) {
     return (
@@ -247,7 +258,7 @@ export default function PublicInvoice() {
               <div className="text-right grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Date Issued</p>
-                  <p className="text-sm font-bold text-gray-900 dark:text-zinc-300">{new Date(invoice.createdAt?.toDate?.() || Date.now()).toLocaleDateString()}</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-zinc-300">{createdAtDate.toLocaleDateString()}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Due Date</p>
@@ -267,7 +278,7 @@ export default function PublicInvoice() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-zinc-800">
-                  {invoice.items.map((item: any, i: number) => (
+                  {invoice.items.map((item: InvoiceItem, i: number) => (
                     <tr key={i} className="group">
                       <td className="py-6">
                         <p className="font-bold text-gray-900 dark:text-white text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.description}</p>
@@ -322,7 +333,7 @@ export default function PublicInvoice() {
                 {invoice.notes && (
                   <div>
                     <p className="text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Note from Sender</p>
-                    <p className="text-sm text-gray-600 dark:text-zinc-300 font-medium italic border-l-4 border-gray-100 dark:border-zinc-800 pl-4 py-1">"{invoice.notes}"</p>
+                    <p className="text-sm text-gray-600 dark:text-zinc-300 font-medium italic border-l-4 border-gray-100 dark:border-zinc-800 pl-4 py-1">&ldquo;{invoice.notes}&rdquo;</p>
                   </div>
                 )}
               </div>
@@ -358,7 +369,7 @@ export default function PublicInvoice() {
                 {invoice.status !== 'paid' && (
                   <div className="pt-6 border-t border-gray-200 dark:border-zinc-700">
                     <p className="text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-4">Approval</p>
-                    <SignaturePad onSave={(data) => console.log("Signature saved", data)} />
+                    <SignaturePad onSave={() => { /* Read-only public view; signatures are captured in the authenticated flow */ }} />
                   </div>
                 )}
                 

@@ -1,25 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Search, Filter, Loader2, FileText, 
-  Trash2, Download, Send, CheckCircle, 
-  X, AlertTriangle, ArrowRight, MoreVertical,
-  FileCheck
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Plus,
+  Loader2,
+  FileText,
+  Trash2,
+  FileCheck,
 } from 'lucide-react';
 import { dbService } from '../services/dbService';
-import { motion, AnimatePresence } from 'motion/react';
+import type { QuoteData } from '../services/dbService';
 import { format } from 'date-fns';
-import { cn } from '../lib/utils';
+
+
+const makeConvertedInvoiceNumber = () => `INV-${Date.now().toString().slice(-4)}`;
 
 export default function Quotes({ userId }: { userId: string }) {
-  const [quotes, setQuotes] = useState<any[]>([]);
+  const [quotes, setQuotes] = useState<QuoteData[]>([]);
   const [loading, setLoading] = useState(true);
   const [converting, setConverting] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchQuotes();
-  }, [userId]);
-
-  const fetchQuotes = async () => {
+  const fetchQuotes = useCallback(async () => {
     setLoading(true);
     try {
       const data = await dbService.getQuotes(userId);
@@ -29,24 +28,24 @@ export default function Quotes({ userId }: { userId: string }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
-  const handleConvertToInvoice = async (quote: any) => {
+useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchQuotes();
+  }, [fetchQuotes]);
+
+  const handleConvertToInvoice = async (quote: QuoteData) => {
+    if (!quote.id) return;
     setConverting(quote.id);
     try {
-      const invoiceData = {
-        ...quote,
-        status: 'draft',
-        invoiceNumber: `INV-${Date.now().toString().slice(-4)}`,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      delete invoiceData.id;
-      await dbService.saveInvoice(userId, invoiceData);
+      const invoiceNumber = makeConvertedInvoiceNumber();
+      // saveInvoice stamps id/createdAt/updatedAt itself; spreading the quote preserves all client fields.
+      await dbService.saveInvoice(userId, { ...quote, status: 'draft', invoiceNumber });
       await dbService.deleteQuote(userId, quote.id);
       fetchQuotes();
       alert("Quote successfully converted to Invoice draft!");
-    } catch (err) {
+    } catch {
       alert("Failed to convert quote");
     } finally {
       setConverting(null);
@@ -58,7 +57,7 @@ export default function Quotes({ userId }: { userId: string }) {
     try {
       await dbService.deleteQuote(userId, id);
       fetchQuotes();
-    } catch (err) {
+    } catch {
       alert("Failed to delete quote");
     }
   };
@@ -117,7 +116,7 @@ export default function Quotes({ userId }: { userId: string }) {
                           <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-black">Q</div>
                           <div>
                             <p className="font-bold text-gray-900">{quote.quoteNumber || 'QT-2024-001'}</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{format(quote.createdAt?.toDate?.() || new Date(), 'MMM dd, yyyy')}</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{format(quote.createdAt ? new Date(quote.createdAt) : new Date(), 'MMM dd, yyyy')}</p>
                           </div>
                         </div>
                       </td>
@@ -165,7 +164,7 @@ export default function Quotes({ userId }: { userId: string }) {
                       <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-black">Q</div>
                       <div>
                         <h4 className="text-sm font-black text-gray-900 tracking-tight">{quote.quoteNumber || 'QT-2024-001'}</h4>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{format(quote.createdAt?.toDate?.() || new Date(), 'MMM dd, yyyy')}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{format(quote.createdAt ? new Date(quote.createdAt) : new Date(), 'MMM dd, yyyy')}</p>
                       </div>
                     </div>
                     <span className="px-2 py-0.5 bg-yellow-50 text-yellow-600 text-[10px] font-bold uppercase tracking-widest rounded-lg border border-yellow-100 shadow-sm">

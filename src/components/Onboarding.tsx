@@ -8,13 +8,11 @@ import {
   Coins, 
   ArrowRight, 
   Loader2, 
-  CheckCircle,
   AlertCircle,
-  Briefcase,
-  Globe,
   Sparkles
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import ThemeToggle from './ThemeToggle';
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -41,7 +39,6 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     }
     setLoading(true);
     setError(null);
-    console.log("Finalizing onboarding...", formData);
     try {
       await dbService.updateUserSettings(auth.currentUser.uid, {
         ...formData,
@@ -50,18 +47,16 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         onboardingCompleted: true,
         updatedAt: new Date().toISOString()
       });
-      console.log("Onboarding complete!");
       onComplete();
-    } catch (err: any) {
+    } catch (err) {
       console.error("Onboarding submission failed:", err);
-      setError(err.message || "Failed to save settings. Please try again.");
+      setError(err instanceof Error && err.message ? err.message : "Failed to save settings. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   const nextStep = () => {
-    console.log(`Advancing from step ${step} to ${step + 1}`);
     if (step < totalSteps) {
       setStep(prev => prev + 1);
     } else {
@@ -87,13 +82,16 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       onKeyDown={handleKeyDown}
     >
       <div className="w-full max-w-5xl bg-white dark:bg-zinc-900 rounded-[3rem] shadow-2xl shadow-blue-100/50 dark:shadow-none border border-gray-100 dark:border-zinc-800 flex flex-col md:flex-row min-h-[600px] relative transition-colors">
-        {/* Skip for now button */}
-        <button 
-          onClick={onComplete}
-          className="absolute top-6 right-6 z-50 text-[10px] font-black text-gray-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors uppercase tracking-widest bg-white/80 dark:bg-zinc-800/80 backdrop-blur px-3 py-1 rounded-full border border-gray-100 dark:border-zinc-800"
-        >
-          Skip for now
-        </button>
+        {/* Colour mode switch + Skip for now button */}
+        <div className="absolute top-6 right-6 z-50 flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            onClick={onComplete}
+            className="text-[10px] font-black text-gray-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors uppercase tracking-widest bg-white/80 dark:bg-zinc-800/80 backdrop-blur px-3 py-1 rounded-full border border-gray-100 dark:border-zinc-800"
+          >
+            Skip for now
+          </button>
+        </div>
 
         {/* Left Side: Form */}
         <div className="flex-1 p-8 sm:p-12 lg:p-16 flex flex-col bg-white dark:bg-zinc-900 rounded-[3rem]">
@@ -122,7 +120,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                     </div>
                     <div className="space-y-2">
                       <h2 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight font-display italic leading-none">Setup your business</h2>
-                      <p className="text-gray-500 dark:text-zinc-400 font-medium text-lg leading-tight">What's the name of your brand? This will lead every invoice you send.</p>
+                      <p className="text-gray-500 dark:text-zinc-400 font-medium text-lg leading-tight">What&apos;s the name of your brand? This will lead every invoice you send.</p>
                     </div>
                   </div>
 
@@ -238,7 +236,6 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
-                  console.log("Button clicked!");
                   nextStep();
                 }}
                 disabled={loading || !isStepValid()}
@@ -341,7 +338,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             <div className="pt-8">
               <div className="p-6 bg-blue-600 rounded-[2rem] text-blue-50 space-y-2 shadow-xl shadow-blue-100">
                 <blockquote className="text-sm font-bold leading-relaxed italic">
-                  "This setup took me less than a minute. The AI handles the rest."
+                  &ldquo;This setup took me less than a minute. The AI handles the rest.&rdquo;
                 </blockquote>
                 <cite className="text-[10px] font-black uppercase tracking-widest opacity-60 not-italic">— Sarah, Freelance Designer</cite>
               </div>

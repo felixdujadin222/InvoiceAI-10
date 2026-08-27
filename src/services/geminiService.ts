@@ -1,6 +1,9 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+function getAiClient() {
+  const apiKey = (import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) || (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || "";
+  return new GoogleGenAI({ apiKey: apiKey || "missing-api-key" });
+}
 
 export interface InvoiceItem {
   description: string;
@@ -18,7 +21,8 @@ export interface GeneratedInvoice {
 }
 
 export async function parseInvoiceDescription(description: string): Promise<GeneratedInvoice> {
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-2.5-flash";
+  const ai = getAiClient();
   
   const prompt = `
     You are an expert billing specialist. Parse the following description into a professional, structured invoice format.
@@ -67,7 +71,7 @@ export async function parseInvoiceDescription(description: string): Promise<Gene
     }
   });
 
-  return JSON.parse(response.text);
+  return JSON.parse(response.text || "{}");
 }
 
 export interface ReceiptInfo {
@@ -86,17 +90,21 @@ export async function parseReceipt(file: File): Promise<ReceiptInfo> {
     reader.readAsDataURL(file);
   });
 
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-2.5-flash";
+  const ai = getAiClient();
   const prompt = "Extract the merchant name, total amount, date, category (General, Travel, Food, Software, hardware, Marketing, Taxes, Office), and currency from this receipt image.";
 
   const response = await ai.models.generateContent({
     model,
-    contents: {
-      parts: [
-        { inlineData: { data: base64Data, mimeType: file.type } },
-        { text: prompt }
-      ]
-    },
+    contents: [
+      {
+        role: "user",
+        parts: [
+          { inlineData: { data: base64Data, mimeType: file.type } },
+          { text: prompt }
+        ]
+      }
+    ],
     config: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -113,11 +121,24 @@ export async function parseReceipt(file: File): Promise<ReceiptInfo> {
     }
   });
 
-  return JSON.parse(response.text);
+  return JSON.parse(response.text || "{}");
 }
 
-export async function getFinancialInsights(invoices: any[], expenses: any[]): Promise<string> {
-  const model = "gemini-3-flash-preview";
+export interface InvoiceSummary {
+  total?: number;
+  status?: string;
+  createdAt?: string | null;
+}
+
+export interface ExpenseSummary {
+  amount?: number;
+  category?: string;
+  date?: string;
+}
+
+export async function getFinancialInsights(invoices: InvoiceSummary[], expenses: ExpenseSummary[]): Promise<string> {
+  const model = "gemini-2.5-flash";
+  const ai = getAiClient();
   const prompt = `
     Analyze this financial data for a freelancer/small business:
     Invoices: ${JSON.stringify(invoices.map(i => ({ total: i.total, status: i.status, date: i.createdAt })))}

@@ -2,10 +2,11 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { 
-  Sparkles, ArrowRight, FileText, CheckCircle, 
-  Zap, Shield, Globe, Coins, ReceiptText
+  Sparkles, ArrowRight, 
+  Zap, Shield, ReceiptText
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import ThemeToggle from './ThemeToggle';
 
 export default function LandingPage() {
   return (
@@ -23,6 +24,7 @@ export default function LandingPage() {
             <a href="#templates" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Templates</a>
           </div>
           <div className="flex items-center gap-4">
+            <ThemeToggle />
             <Link
               to="/auth"
               className="text-xs font-black uppercase tracking-widest text-gray-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"

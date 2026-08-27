@@ -1,32 +1,62 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useLayoutEffect, useState } from 'react';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  XAxis, YAxis, CartesianGrid, Tooltip, 
   PieChart, Pie, Cell, AreaChart, Area 
 } from 'recharts';
 import { 
-  TrendingUp, TrendingDown, DollarSign, PieChart as PieIcon, 
-  Download, Filter, Calendar, Zap, Target, Loader2
+  TrendingUp, DollarSign,
+  Download, Zap, Target, Loader2
 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, subMonths, isWithinInterval } from 'date-fns';
+import { format } from 'date-fns';
 import { getFinancialInsights } from '../services/geminiService';
+import type { InvoiceData, UserSettings } from '../services/dbService';
 
 interface ReportsProps {
-  invoices: any[];
-  userSettings: any;
+  invoices: InvoiceData[];
+  userSettings: UserSettings;
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#6366f1'];
 
+// ---------------------------------------------------------------------------
+// useMeasure – tracks an element's pixel dimensions via ResizeObserver.
+// Returns [ref, { width, height }].  width/height are 0 until the element
+// has been laid out in the browser.
+// ---------------------------------------------------------------------------
+function useMeasure<T extends HTMLElement>(): [React.RefObject<T>, { width: number; height: number }] {
+  const ref = useRef<T>(null);
+  const [dims, setDims] = useState({ width: 0, height: 0 });
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    // Read initial size synchronously so charts are ready on first meaningful paint.
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      setDims({ width: rect.width, height: rect.height });
+    }
+
+    const ro = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (width > 0 && height > 0) {
+        setDims({ width, height });
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return [ref, dims];
+}
+
 export default function Reports({ invoices, userSettings }: ReportsProps) {
   const [aiInsight, setAiInsight] = React.useState<string>("");
   const [loadingAi, setLoadingAi] = React.useState(false);
-  const [isReady, setIsReady] = React.useState(false);
 
-  React.useEffect(() => {
-    // Initial stabilization delay
-    const timer = setTimeout(() => setIsReady(true), 500);
-    return () => clearTimeout(timer);
-  }, []);
+  // Measure each chart wrapper before rendering the chart.
+  const [areaRef, areaDims] = useMeasure<HTMLDivElement>();
+  const [pieRef, pieDims] = useMeasure<HTMLDivElement>();
 
   React.useEffect(() => {
     const fetchInsight = async () => {
@@ -43,6 +73,7 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
     };
     fetchInsight();
   }, [invoices]);
+
   const currency = userSettings?.currency || 'USD';
   const getCurrencySymbol = (code: string) => {
     const symbols: Record<string, string> = { 'USD': '$', 'EUR': '€', 'GBP': '£', 'NGN': '₦', 'KES': 'KSh' };
@@ -60,7 +91,8 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
     // Monthly data
     const monthlyMap = new Map();
     invoices.forEach(inv => {
-      const date = inv.createdAt?.toDate?.() || new Date();
+      const parsed = inv.createdAt ? new Date(inv.createdAt) : null;
+      const date = parsed && !Number.isNaN(parsed.getTime()) ? parsed : new Date();
       const month = format(date, 'MMM yyyy');
       const current = monthlyMap.get(month) || { month, total: 0, paid: 0 };
       current.total += inv.total || 0;
@@ -93,7 +125,7 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
     const rows = invoices.map(inv => [
       inv.invoiceNumber,
       inv.clientName,
-      format(inv.createdAt?.toDate?.() || new Date(), 'yyyy-MM-dd'),
+      format(inv.createdAt && !Number.isNaN(new Date(inv.createdAt).getTime()) ? new Date(inv.createdAt) : new Date(), 'yyyy-MM-dd'),
       inv.total,
       inv.status,
       inv.tax
@@ -190,34 +222,37 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
               Growth Chart
             </div>
           </div>
-          <div className="h-[300px] w-full min-w-0">
-            {isReady && (
-              <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={0} minHeight={0}>
-                <AreaChart data={stats.monthlyData}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" className="dark:stroke-zinc-800" />
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#9ca3af'}} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#9ca3af'}} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      borderRadius: '1rem', 
-                      border: 'none', 
-                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                      backgroundColor: 'var(--card)',
-                      color: 'var(--foreground)'
-                    }}
-                    itemStyle={{ color: 'var(--foreground)' }}
-                    formatter={(value: any) => [`${symbol}${value.toLocaleString()}`, 'Revenue']}
-                  />
-                  <Area type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
-                  <Area type="monotone" dataKey="paid" stroke="#10b981" strokeWidth={3} strokeDasharray="5 5" fill="transparent" />
-                </AreaChart>
-              </ResponsiveContainer>
+          {/* Wrapper measured by useMeasure – chart only renders once dims are known */}
+          <div ref={areaRef} className="h-[300px] w-full">
+            {areaDims.width > 0 && areaDims.height > 0 && (
+              <AreaChart
+                width={areaDims.width}
+                height={areaDims.height}
+                data={stats.monthlyData}
+              >
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#9ca3af'}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#9ca3af'}} />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: '1rem',
+                    border: 'none',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                    backgroundColor: 'var(--card)',
+                    color: 'var(--foreground)'
+                  }}
+                  itemStyle={{ color: 'var(--foreground)' }}
+                  formatter={(value: number | string) => [`${symbol}${Number(value).toLocaleString()}`, 'Revenue']}
+                />
+                <Area type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                <Area type="monotone" dataKey="paid" stroke="#10b981" strokeWidth={3} strokeDasharray="5 5" fill="transparent" />
+              </AreaChart>
             )}
           </div>
         </div>
@@ -228,33 +263,32 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
             <h3 className="text-xl font-bold text-gray-900 dark:text-white italic tracking-tight">Status Mix</h3>
             <p className="text-xs text-gray-400 dark:text-zinc-500 font-bold uppercase tracking-widest mt-1">Portfolio Breakdown</p>
           </div>
-          <div className="h-[250px] w-full min-w-0">
-            {isReady && (
-              <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={0} minHeight={0}>
-                <PieChart>
-                  <Pie
-                    data={stats.statusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {stats.statusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      borderRadius: '1rem', 
-                      border: 'none', 
-                      backgroundColor: 'var(--card)',
-                      color: 'var(--foreground)'
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+          {/* Wrapper measured by useMeasure */}
+          <div ref={pieRef} className="h-[250px] w-full">
+            {pieDims.width > 0 && pieDims.height > 0 && (
+              <PieChart width={pieDims.width} height={pieDims.height}>
+                <Pie
+                  data={stats.statusData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {stats.statusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: '1rem',
+                    border: 'none',
+                    backgroundColor: 'var(--card)',
+                    color: 'var(--foreground)'
+                  }}
+                />
+              </PieChart>
             )}
           </div>
           <div className="space-y-3 mt-4">
@@ -292,7 +326,7 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
             </div>
           </div>
           <button 
-            onClick={() => {}} 
+            onClick={() => { /* TODO: wire to on-demand deep analysis run */ }}
             className="px-8 py-4 bg-white text-gray-900 font-black rounded-2xl hover:bg-gray-100 transition-all uppercase tracking-widest text-xs"
           >
             Run Deep Analysis

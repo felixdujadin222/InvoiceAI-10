@@ -1,28 +1,24 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { 
-  getFirestore, 
-  doc, 
-  getDoc,
-} from "firebase/firestore/lite";
-import firebaseConfig from "../../firebase-applet-config.json";
+import { getFirestore } from "firebase/firestore/lite";
+
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+};
+
+const databaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID || "(default)";
+
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  console.warn("Firebase configuration missing! Check your .env file.");
+}
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-
-// Use Lite SDK to avoid background 'Listen' streams in sandboxed environments
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-
-// Mandatory connection test per system instructions
-async function testConnection() {
-  try {
-    await getDoc(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Firebase connection test failed: check your configuration or network.");
-    }
-  }
-}
-testConnection();
+export const db = getFirestore(app, databaseId);
 
 export default app;
