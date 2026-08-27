@@ -49,7 +49,7 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-zinc-950 overflow-hidden relative">
+    <div className="flex h-screen supports-[height:100dvh]:h-dvh bg-gray-50 dark:bg-zinc-950 overflow-hidden relative">
       {/* Sidebar - Hidden on mobile */}
       <aside className="hidden lg:flex w-64 bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-800 flex-col shrink-0">
         <div className="p-6 flex-1 overflow-y-auto">
@@ -108,7 +108,7 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-zinc-950">
-        <header className="h-20 bg-white dark:bg-zinc-950 border-b border-gray-100 dark:border-zinc-900 px-6 sm:px-8 flex items-center justify-between flex-shrink-0 z-30 transition-colors">
+        <header className="min-h-20 pt-safe bg-white dark:bg-zinc-950 border-b border-gray-100 dark:border-zinc-900 px-6 sm:px-8 flex items-center justify-between flex-shrink-0 z-30 transition-colors">
           <div className="flex items-center gap-4 lg:hidden">
             <button 
               onClick={() => setIsMobileMenuOpen(true)}
@@ -179,7 +179,7 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
                 animate={{ x: 0 }}
                 exit={{ x: '-100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="absolute left-0 top-0 bottom-0 w-80 bg-white dark:bg-zinc-950 shadow-2xl flex flex-col"
+                className="absolute left-0 top-0 bottom-0 w-80 max-w-[88vw] pt-safe pb-safe bg-white dark:bg-zinc-950 shadow-2xl flex flex-col"
               >
                 <div className="p-8 pb-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -241,7 +241,7 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
         </AnimatePresence>
 
         {/* Mobile Tab Bar - Redined Version */}
-        <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border-t border-gray-100 dark:border-zinc-800 flex items-center justify-around lg:hidden z-40 px-4 pb-safe shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] transition-colors">
+        <nav className="fixed bottom-0 left-0 right-0 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border-t border-gray-100 dark:border-zinc-800 flex items-center justify-around lg:hidden z-40 px-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] transition-colors">
           {[
             { id: 'dashboard', icon: LayoutDashboard, label: 'Home' },
             { id: 'invoices', icon: ReceiptText, label: 'Invoices' },

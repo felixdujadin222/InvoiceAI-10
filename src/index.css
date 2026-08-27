@@ -113,3 +113,57 @@
 .dashboard-bg::after {
   animation: floatBlob 18s ease-in-out infinite reverse;
 }
+
+/* ---- Mobile & cross-device hardening (Android + iOS) ---------------------- */
+
+/* Safe-area utilities: env() resolves to 0px on devices without notches, so
+   these are no-ops on desktop and only add breathing room around the iPhone
+   notch / home indicator and Android display cutouts. */
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pl-safe {
+  padding-left: env(safe-area-inset-left);
+}
+@utility pr-safe {
+  padding-right: env(safe-area-inset-right);
+}
+
+@layer base {
+  html {
+    /* Stop iOS Safari from inflating text when the phone rotates to landscape. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    /* App-like scroll feel: no rubber-banding/pull-to-refresh navigation. */
+    overscroll-behavior-y: none;
+  }
+
+  /* Remove the grey tap flash on Android/iOS and the double-tap-zoom delay. */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button,
+  a,
+  [role='button'],
+  label,
+  select {
+    touch-action: manipulation;
+  }
+
+  /* iOS Safari zooms any focused field whose font-size is below 16px, which
+     blows apart layouts on phones. Coarse-pointer devices (phones/tablets)
+     get a 16px minimum; mouse-driven devices keep the designed sizes. */
+  @media (pointer: coarse) {
+    input:not([type='checkbox']):not([type='radio']):not([type='range']),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+}

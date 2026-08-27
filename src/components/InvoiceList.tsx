@@ -402,7 +402,7 @@ export default function InvoiceList({ showToast, onEditInvoice }: InvoiceListPro
             initial={{ opacity: 0, y: 100, x: '-50%' }}
             animate={{ opacity: 1, y: 0, x: '-50%' }}
             exit={{ opacity: 0, y: 100, x: '-50%' }}
-            className="fixed bottom-24 sm:bottom-8 left-1/2 -translate-x-1/2 z-[45] w-[calc(100%-2rem)] max-w-2xl"
+            className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] sm:bottom-8 left-1/2 -translate-x-1/2 z-[45] w-[calc(100%-2rem)] max-w-2xl"
           >
             <div className="bg-gray-900 dark:bg-zinc-950 text-white rounded-2xl shadow-2xl p-3 sm:p-4 flex items-center justify-between gap-3 sm:gap-4 border border-gray-800 dark:border-zinc-800 backdrop-blur-md overflow-hidden">
               <div className="flex items-center gap-3 sm:gap-4 pl-2 shrink-0">
@@ -869,7 +869,7 @@ export default function InvoiceList({ showToast, onEditInvoice }: InvoiceListPro
               exit={{ x: '100%' }}
               className="fixed inset-y-0 right-0 max-w-2xl w-full bg-white dark:bg-zinc-950 shadow-2xl transition-all"
             >
-              <div className="h-full flex flex-col">
+              <div className="h-full flex flex-col pt-safe pb-safe">
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-950 sticky top-0 z-10">
                   <div className="flex items-center gap-3">

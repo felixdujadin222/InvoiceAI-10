@@ -350,7 +350,7 @@ export default function Dashboard({
       <div className="space-y-8 pb-12 relative">
         {/* Welcome & Quick Actions */}
         <div className="flex flex-col xl:flex-row gap-6 items-stretch">
-          <div className="flex-1 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 rounded-[2rem] p-8 sm:p-10 text-white relative overflow-hidden shadow-xl ring-1 ring-white/10">
+          <div className="flex-1 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 rounded-[2rem] p-6 sm:p-10 text-white relative overflow-hidden shadow-xl ring-1 ring-white/10">
             <div className="absolute top-0 right-0 p-8 opacity-20 hidden md:block">
               <Sparkles size={160} />
             </div>

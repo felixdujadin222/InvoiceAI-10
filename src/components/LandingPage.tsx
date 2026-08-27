@@ -150,7 +150,7 @@ export default function LandingPage() {
             ].map((feature, i) => (
               <div 
                 key={i}
-                className="p-10 bg-[#fafafa] dark:bg-zinc-900/50 rounded-[2.5rem] border border-transparent hover:border-gray-200 dark:hover:border-zinc-800 transition-all space-y-6"
+                className="p-6 sm:p-10 bg-[#fafafa] dark:bg-zinc-900/50 rounded-[2.5rem] border border-transparent hover:border-gray-200 dark:hover:border-zinc-800 transition-all space-y-6"
               >
                 <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm", feature.color)}>
                   {feature.icon}

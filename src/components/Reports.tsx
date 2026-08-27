@@ -306,7 +306,7 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
       </div>
 
       {/* Recommendations / Insights */}
-      <div className="bg-gray-900 rounded-[2.5rem] p-10 relative overflow-hidden text-white">
+      <div className="bg-gray-900 rounded-[2.5rem] p-6 sm:p-10 relative overflow-hidden text-white">
         <div className="absolute -right-20 -top-20 w-64 h-64 bg-blue-600 rounded-full blur-[80px] opacity-30" />
         <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
           <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-blue-500/20">

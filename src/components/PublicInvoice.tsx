@@ -221,7 +221,7 @@ export default function PublicInvoice() {
 
         <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl shadow-blue-100/50 dark:shadow-none border border-gray-100 dark:border-zinc-800 overflow-hidden">
           {/* Main Content (Similar to preview) */}
-          <div className="p-8 md:p-12 space-y-12">
+          <div className="p-5 sm:p-8 md:p-12 space-y-12">
             <div className="flex flex-col md:flex-row justify-between items-start gap-8">
               <div className="space-y-4">
                 {userSettings?.logoUrl && (
@@ -249,7 +249,7 @@ export default function PublicInvoice() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-12 pt-12 border-t border-gray-100 dark:border-zinc-800">
+            <div className="grid grid-cols-2 gap-8 md:gap-12 pt-12 border-t border-gray-100 dark:border-zinc-800">
               <div>
                 <p className="text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-3">Bill To</p>
                 <h4 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">{invoice.clientName}</h4>
@@ -426,7 +426,7 @@ export default function PublicInvoice() {
       {/* Payment Success Overlay */}
       {paymentSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl dark:shadow-none animate-in zoom-in-95 duration-500 border border-gray-100 dark:border-zinc-800">
+          <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-6 sm:p-10 max-w-sm w-full text-center shadow-2xl dark:shadow-none animate-in zoom-in-95 duration-500 border border-gray-100 dark:border-zinc-800">
             <div className="w-20 h-20 bg-green-50 dark:bg-green-900/10 text-green-500 dark:text-green-400 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <CheckCircle2 size={48} />
             </div>
