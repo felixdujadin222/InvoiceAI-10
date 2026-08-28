@@ -1,4 +1,5 @@
 {
+  "$schema": "./schemas/package-schema.json",
   "name": "invoiceflow-ai",
   "private": true,
   "version": "1.0.0",
@@ -13,7 +14,8 @@
     "test:watch": "vitest",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json,css,md}\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "gen:icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
@@ -52,6 +54,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^29.1.1",
     "prettier": "^3.9.6",
+    "sharp": "^0.35.4",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",

@@ -5,6 +5,7 @@ import type { InvoiceData, UserSettings } from '../services/dbService';
 import type { InvoiceItem } from '../services/geminiService';
 import { Loader2, Download, CheckCircle2, AlertTriangle, ShieldCheck, CreditCard, Landmark, X } from 'lucide-react';
 import { toJsDate } from '../lib/utils';
+import LogoMark from './LogoMark';
 
 // Simplified Signature Pad inside the component
 const SignaturePad = ({ onSave }: { onSave: (data: string) => void }) => {
@@ -68,7 +69,7 @@ const SignaturePad = ({ onSave }: { onSave: (data: string) => void }) => {
         />
         <button 
           onClick={clear}
-          className="absolute top-2 right-2 p-1.5 bg-white dark:bg-zinc-900 shadow-sm border border-gray-100 dark:border-zinc-800 rounded-lg text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors"
+          className="absolute top-2 right-2 p-2 bg-white dark:bg-zinc-900 shadow-sm border border-gray-100 dark:border-zinc-800 rounded-lg text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors"
         >
           <X size={14} />
         </button>
@@ -173,8 +174,8 @@ export default function PublicInvoice() {
     });
   };
 
-  const createdAtDate = toJsDate(invoice.createdAt);
-  const dueDate = new Date(invoice.dueDate);
+  const createdAtDate = invoice ? toJsDate(invoice.createdAt) : new Date(0);
+  const dueDate = invoice ? toJsDate(invoice.dueDate) : new Date();
 
   if (loading) {
     return (
@@ -190,7 +191,7 @@ export default function PublicInvoice() {
   if (error || !invoice) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-950 p-6 transition-colors duration-500">
-        <div className="max-w-md w-full bg-white dark:bg-zinc-900 rounded-3xl shadow-xl dark:shadow-none p-8 text-center border border-gray-100 dark:border-zinc-800">
+        <div className="max-w-md w-full bg-white dark:bg-zinc-900 rounded-3xl shadow-xl dark:shadow-none p-6 sm:p-8 text-center border border-gray-100 dark:border-zinc-800">
           <div className="w-16 h-16 bg-red-50 dark:bg-red-900/10 text-red-500 dark:text-red-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <AlertTriangle size={32} />
           </div>
@@ -205,12 +206,12 @@ export default function PublicInvoice() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-zinc-950 py-12 px-4 transition-colors duration-500">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-zinc-950 py-10 sm:py-12 px-4 sm:px-6 transition-colors duration-500">
+      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
         {/* Header Branding */}
-        <div className="flex items-center justify-between px-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-200 dark:shadow-none">I</div>
+            <LogoMark className="w-10 h-10 shadow-lg shadow-blue-200 dark:shadow-none" />
             <span className="text-xl font-black text-gray-900 dark:text-white tracking-tight">InvoiceFlow AI</span>
           </div>
           <div className="flex items-center gap-2 text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest bg-white dark:bg-zinc-900 px-4 py-2 rounded-full border border-gray-100 dark:border-zinc-800">
@@ -221,7 +222,7 @@ export default function PublicInvoice() {
 
         <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl shadow-blue-100/50 dark:shadow-none border border-gray-100 dark:border-zinc-800 overflow-hidden">
           {/* Main Content (Similar to preview) */}
-          <div className="p-5 sm:p-8 md:p-12 space-y-12">
+          <div className="p-5 sm:p-8 md:p-12 space-y-8 sm:space-y-12">
             <div className="flex flex-col md:flex-row justify-between items-start gap-8">
               <div className="space-y-4">
                 {userSettings?.logoUrl && (
@@ -240,7 +241,7 @@ export default function PublicInvoice() {
                   <p className="text-gray-400 dark:text-zinc-500 text-xs mt-1">{userSettings?.businessAddress}</p>
                 </div>
               </div>
-              <div className="text-right space-y-2">
+              <div className="text-left md:text-right space-y-2 w-full md:w-auto">
                 <span className={`inline-block px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-sm ${getStatusStyle(invoice.status)}`}>
                   {invoice.status}
                 </span>
@@ -249,20 +250,20 @@ export default function PublicInvoice() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-8 md:gap-12 pt-12 border-t border-gray-100 dark:border-zinc-800">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-12 pt-12 border-t border-gray-100 dark:border-zinc-800">
               <div>
                 <p className="text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-3">Bill To</p>
                 <h4 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">{invoice.clientName}</h4>
                 <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1 font-medium italic">{invoice.clientEmail}</p>
               </div>
-              <div className="text-right grid grid-cols-2 gap-4">
+              <div className="text-left sm:text-right grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Date Issued</p>
                   <p className="text-sm font-bold text-gray-900 dark:text-zinc-300">{createdAtDate.toLocaleDateString()}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Due Date</p>
-                  <p className="text-sm font-black text-blue-600 dark:text-blue-400">{new Date(invoice.dueDate).toLocaleDateString()}</p>
+                  <p className="text-sm font-black text-blue-600 dark:text-blue-400">{dueDate.toLocaleDateString()}</p>
                 </div>
               </div>
             </div>
@@ -281,7 +282,7 @@ export default function PublicInvoice() {
                   {invoice.items.map((item: InvoiceItem, i: number) => (
                     <tr key={i} className="group">
                       <td className="py-6">
-                        <p className="font-bold text-gray-900 dark:text-white text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.description}</p>
+                        <p className="font-bold text-gray-900 dark:text-white text-base sm:text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.description}</p>
                         <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1 font-medium">Rate: {getCurrencySymbol(invoice.currency)}{item.rate.toLocaleString()}</p>
                       </td>
                       <td className="py-6 text-center font-bold text-gray-600 dark:text-zinc-400">{item.quantity}</td>
@@ -295,7 +296,7 @@ export default function PublicInvoice() {
             </div>
 
             {/* Summary */}
-            <div className="flex flex-col md:flex-row gap-12 pt-8 border-t border-gray-100 dark:border-zinc-800">
+            <div className="flex flex-col md:flex-row gap-8 md:gap-12 pt-8 border-t border-gray-100 dark:border-zinc-800">
               <div className="flex-1 space-y-6">
                 {/* Payment Instructions Inline */}
                 {userSettings?.bankDetails?.bankName && (
@@ -338,7 +339,7 @@ export default function PublicInvoice() {
                 )}
               </div>
 
-              <div className="w-full md:w-80 space-y-3 bg-gray-50 dark:bg-zinc-800/50 rounded-3xl p-8">
+              <div className="w-full md:w-80 space-y-3 bg-gray-50 dark:bg-zinc-800/50 rounded-3xl p-5 sm:p-8">
                 <div className="flex justify-between text-sm">
                   <span className="font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest text-[10px]">Subtotal</span>
                   <span className="font-bold text-gray-900 dark:text-white">{getCurrencySymbol(invoice.currency)}{invoice.subtotal.toLocaleString()}</span>
@@ -406,7 +407,7 @@ export default function PublicInvoice() {
 
           {/* Footer Terms */}
           {userSettings?.terms && (
-            <div className="px-8 py-6 bg-gray-900 dark:bg-zinc-800 text-white flex flex-col md:flex-row items-center justify-between gap-4 transition-colors">
+            <div className="px-4 sm:px-8 py-6 bg-gray-900 dark:bg-zinc-800 text-white flex flex-col md:flex-row items-center justify-between gap-4 transition-colors">
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-blue-400" />
                 <p className="text-xs font-bold leading-relaxed max-w-lg">

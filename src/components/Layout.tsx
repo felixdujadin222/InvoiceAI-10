@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LayoutDashboard, ReceiptText, Users, Settings, LogOut, PlusCircle, Bell, Repeat, BarChart3, Receipt, FileSearch, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import ThemeToggle from './ThemeToggle';
+import LogoMark from './LogoMark';
 import { motion, AnimatePresence } from 'motion/react';
 import type { AppUser } from '../lib/authHelper';
 import type { User } from 'firebase/auth';
@@ -54,7 +55,7 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
       <aside className="hidden lg:flex w-64 bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-800 flex-col shrink-0">
         <div className="p-6 flex-1 overflow-y-auto">
           <div className="flex items-center gap-2 mb-10">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-200">I</div>
+            <LogoMark className="w-10 h-10 shadow-lg shadow-blue-200" />
             <span className="text-xl font-black tracking-tight text-gray-900 dark:text-white">InvoiceFlow<span className="text-blue-600">AI</span></span>
           </div>
           
@@ -121,7 +122,7 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
               </div>
             </button>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-blue-100 dark:shadow-none">I</div>
+              <LogoMark className="w-8 h-8 shadow-lg shadow-blue-100 dark:shadow-none" />
               <h1 className="text-lg font-black text-gray-900 dark:text-white tracking-tight capitalize italic">
                 {activeTab === 'dashboard' ? 'Overview' : activeTab}
               </h1>
@@ -183,7 +184,7 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
               >
                 <div className="p-8 pb-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl">I</div>
+                    <LogoMark className="w-10 h-10" />
                     <span className="text-xl font-black tracking-tight text-gray-900 dark:text-white uppercase italic">InvoiceFlow</span>
                   </div>
                   <button 

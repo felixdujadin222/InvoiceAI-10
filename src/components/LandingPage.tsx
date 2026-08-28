@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import ThemeToggle from './ThemeToggle';
+import LogoMark from './LogoMark';
 
 export default function LandingPage() {
   return (
@@ -15,7 +16,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-[100] px-6 py-6 font-display">
         <div className="max-w-7xl mx-auto flex items-center justify-between bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-white/20 dark:border-zinc-800/50 px-6 py-4 rounded-3xl shadow-xl shadow-gray-100/50 dark:shadow-none">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-200">I</div>
+            <LogoMark className="w-10 h-10 shadow-lg shadow-blue-200" />
             <span className="text-xl font-black text-gray-900 dark:text-white tracking-tight italic uppercase">InvoiceFlow<span className="text-blue-600">AI</span></span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-[11px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-500">

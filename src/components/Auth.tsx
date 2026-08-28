@@ -20,6 +20,7 @@ import {
 import { useNavigate, Link } from 'react-router-dom';
 import { formatAuthError } from '../lib/authHelper';
 import ThemeToggle from './ThemeToggle';
+import LogoMark from './LogoMark';
 
 interface AuthProps {
   onSuccess: (message: string) => void;
@@ -92,7 +93,7 @@ export default function Auth({ onSuccess }: AuthProps) {
       >
         <div className="text-center space-y-2 mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-4 group">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-200 dark:shadow-none group-hover:scale-110 transition-transform">I</div>
+            <LogoMark className="w-10 h-10 shadow-lg shadow-blue-200 dark:shadow-none group-hover:scale-110 transition-transform" />
             <span className="text-xl font-black text-gray-900 dark:text-white tracking-tight font-display">InvoiceFlow AI</span>
           </Link>
           <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight font-display italic leading-tight">
