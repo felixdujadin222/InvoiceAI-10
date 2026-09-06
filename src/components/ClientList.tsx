@@ -510,19 +510,25 @@ useEffect(() => {
         {viewHistoryClient && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 dark:bg-black/60 backdrop-blur-md">
             <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="bg-white dark:bg-zinc-900 rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[80vh] overflow-hidden flex flex-col"
             >
-              <div className="p-8 border-b border-gray-50 dark:border-zinc-800 flex items-center justify-between shrink-0 bg-gray-50/30 dark:bg-zinc-800/30">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-lg">
+              {/* Mobile drag handle */}
+              <div className="flex justify-center pt-3 pb-1 sm:hidden">
+                <div className="w-10 h-1 bg-gray-300 dark:bg-zinc-600 rounded-full" />
+              </div>
+
+              <div className="px-5 pt-2 pb-5 sm:p-8 sm:pb-6 border-b border-gray-50 dark:border-zinc-800 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0 bg-gray-50/30 dark:bg-zinc-800/30">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 text-white rounded-xl sm:rounded-2xl flex items-center justify-center font-black text-lg sm:text-xl shadow-lg flex-shrink-0">
                     {viewHistoryClient.name[0]}
                   </div>
-                  <div>
-                    <h3 className="text-xl font-black text-gray-900 dark:text-white italic tracking-tight">{viewHistoryClient.name}</h3>
-                    <p className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Client Insights & History</p>
+                  <div className="min-w-0">
+                    <h3 className="text-lg sm:text-xl font-black text-gray-900 dark:text-white italic tracking-tight truncate">{viewHistoryClient.name}</h3>
+                    <p className="text-[9px] sm:text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Client Insights & History</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -530,7 +536,7 @@ useEffect(() => {
                     <button 
                       onClick={() => setHistoryTab('ledger')}
                       className={cn(
-                        "px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
+                        "px-3 py-1.5 sm:px-4 sm:py-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
                         historyTab === 'ledger' ? "bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm" : "text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300"
                       )}
                     >
@@ -539,52 +545,52 @@ useEffect(() => {
                     <button 
                       onClick={() => setHistoryTab('activity')}
                       className={cn(
-                        "px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
+                        "px-3 py-1.5 sm:px-4 sm:py-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
                         historyTab === 'activity' ? "bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm" : "text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300"
                       )}
                     >
                       Activity
                     </button>
                   </div>
-                  <button onClick={() => setViewHistoryClient(null)} className="p-3 text-gray-400 dark:text-zinc-500 hover:bg-white dark:hover:bg-zinc-800 rounded-xl transition-all shadow-sm">
-                    <X size={24} />
+                  <button onClick={() => setViewHistoryClient(null)} className="p-2 sm:p-3 text-gray-400 dark:text-zinc-500 hover:bg-white dark:hover:bg-zinc-800 rounded-xl transition-all shadow-sm">
+                    <X size={20} />
                   </button>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-8 space-y-6">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
                 {historyTab === 'ledger' ? (
                   <>
                     {loadingHistory ? (
-                      <div className="flex flex-col items-center justify-center py-20 gap-3">
-                        <Loader2 className="animate-spin text-blue-600" size={32} />
+                      <div className="flex flex-col items-center justify-center py-16 sm:py-20 gap-3">
+                        <Loader2 className="animate-spin text-blue-600" size={28} />
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Compiling history...</p>
                       </div>
                     ) : clientInvoices.length === 0 ? (
-                      <div className="text-center py-20 space-y-3">
+                      <div className="text-center py-16 sm:py-20 space-y-3">
                         <div className="text-gray-200 flex justify-center">
-                          <Calendar size={48} />
+                          <Calendar size={40} />
                         </div>
                         <p className="text-sm font-bold text-gray-400 leading-relaxed max-w-xs mx-auto italic">No transaction history found for this client.</p>
                       </div>
                     ) : (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 xs:grid-cols-3 gap-4 mb-8">
-                           <div className="p-4 bg-blue-50/50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-900/30">
-                              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Total Billed</p>
-                              <p className="text-xl font-black text-blue-600 dark:text-blue-400 tracking-tight">
+                      <div className="space-y-3 sm:space-y-4">
+                        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-8">
+                           <div className="p-3 sm:p-4 bg-blue-50/50 dark:bg-blue-900/20 rounded-xl sm:rounded-2xl border border-blue-100 dark:border-blue-900/30">
+                              <p className="text-[8px] sm:text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Total Billed</p>
+                              <p className="text-base sm:text-xl font-black text-blue-600 dark:text-blue-400 tracking-tight">
                                 ${clientInvoices.reduce((s, i) => s + (i.total || 0), 0).toLocaleString()}
                               </p>
                            </div>
-                           <div className="p-4 bg-green-50/50 dark:bg-green-900/20 rounded-2xl border border-green-100 dark:border-green-900/30">
-                              <p className="text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">Paid Invoices</p>
-                              <p className="text-xl font-black text-green-600 dark:text-green-400 tracking-tight">
+                           <div className="p-3 sm:p-4 bg-green-50/50 dark:bg-green-900/20 rounded-xl sm:rounded-2xl border border-green-100 dark:border-green-900/30">
+                              <p className="text-[8px] sm:text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">Paid Invoices</p>
+                              <p className="text-base sm:text-xl font-black text-green-600 dark:text-green-400 tracking-tight">
                                 {clientInvoices.filter(i => i.status === 'paid').length}
                               </p>
                            </div>
-                           <div className="p-4 bg-gray-50 dark:bg-zinc-800 rounded-2xl border border-gray-100 dark:border-zinc-700">
-                              <p className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-1">Total Records</p>
-                              <p className="text-xl font-black text-gray-600 dark:text-zinc-300 tracking-tight">
+                           <div className="p-3 sm:p-4 bg-gray-50 dark:bg-zinc-800 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-zinc-700">
+                              <p className="text-[8px] sm:text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-1">Total Records</p>
+                              <p className="text-base sm:text-xl font-black text-gray-600 dark:text-zinc-300 tracking-tight">
                                 {clientInvoices.length}
                               </p>
                            </div>
@@ -592,15 +598,15 @@ useEffect(() => {
 
                         <div className="space-y-2">
                            {clientInvoices.map((inv) => (
-                             <div key={inv.id} className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900/50 border border-gray-100 dark:border-zinc-800 rounded-2xl hover:border-blue-100 dark:hover:border-blue-900/50 transition-colors group">
-                               <div>
-                                 <p className="text-sm font-bold text-gray-900 dark:text-white">{inv.invoiceNumber}</p>
-                                 <p className="text-[10px] text-gray-400 dark:text-zinc-500 font-bold uppercase tracking-widest">
+                             <div key={inv.id} className="flex items-center justify-between gap-3 p-3 sm:p-4 bg-white dark:bg-zinc-900/50 border border-gray-100 dark:border-zinc-800 rounded-xl sm:rounded-2xl hover:border-blue-100 dark:hover:border-blue-900/50 transition-colors group">
+                               <div className="min-w-0">
+                                 <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">{inv.invoiceNumber}</p>
+                                 <p className="text-[9px] sm:text-[10px] text-gray-400 dark:text-zinc-500 font-bold uppercase tracking-widest">
                                    {new Date(inv.dueDate).toLocaleDateString()}
                                  </p>
                                </div>
-                               <div className="text-right">
-                                 <p className="text-sm font-black text-gray-900 dark:text-white">${inv.total?.toLocaleString()}</p>
+                               <div className="text-right flex-shrink-0">
+                                 <p className="text-xs sm:text-sm font-black text-gray-900 dark:text-white">${(inv.total || 0).toLocaleString()}</p>
                                  <span className={cn(
                                    "text-[8px] font-black uppercase tracking-widest",
                                    inv.status === 'paid' ? "text-green-500" : "text-amber-500"
@@ -615,19 +621,19 @@ useEffect(() => {
                     )}
                   </>
                 ) : (
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     {viewHistoryClient.activityLog && viewHistoryClient.activityLog.length > 0 ? (
-                       <div className="relative border-l-2 border-gray-100 dark:border-zinc-800 ml-4 space-y-8 pb-8">
+                       <div className="relative border-l-2 border-gray-100 dark:border-zinc-800 ml-3 sm:ml-4 space-y-6 sm:space-y-8 pb-6 sm:pb-8">
                          {viewHistoryClient.activityLog.map((log, idx) => (
-                           <div key={idx} className="relative pl-8">
-                              <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-white dark:bg-zinc-900 border-2 border-blue-500" />
+                           <div key={idx} className="relative pl-6 sm:pl-8">
+                              <div className="absolute -left-[9px] top-0 w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-white dark:bg-zinc-900 border-2 border-blue-500" />
                               <div>
-                                <div className="flex items-center justify-between">
-                                  <h5 className="text-sm font-black text-gray-900 dark:text-white tracking-tight italic">{log.action}</h5>
-                                  <span className="text-[10px] font-bold text-gray-400 dark:text-zinc-500">{format(new Date(log.timestamp), 'MMM d, yyyy h:mm a')}</span>
+                                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                  <h5 className="text-xs sm:text-sm font-black text-gray-900 dark:text-white tracking-tight italic">{log.action}</h5>
+                                  <span className="text-[9px] sm:text-[10px] font-bold text-gray-400 dark:text-zinc-500">{format(new Date(log.timestamp), 'MMM d, yyyy h:mm a')}</span>
                                 </div>
                                 {log.notes && (
-                                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1 font-medium bg-gray-50 dark:bg-zinc-800/50 p-2 rounded-lg border border-gray-100 dark:border-zinc-700">{log.notes}</p>
+                                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400 mt-1 font-medium bg-gray-50 dark:bg-zinc-800/50 p-2 rounded-lg border border-gray-100 dark:border-zinc-700">{log.notes}</p>
                                 )}
                               </div>
                            </div>
@@ -645,10 +651,10 @@ useEffect(() => {
                 )}
               </div>
 
-              <div className="p-6 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-100 dark:border-zinc-800 flex justify-center">
-                 <button 
+              <div className="p-4 sm:p-6 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-100 dark:border-zinc-800 flex justify-center">
+                 <button
                   onClick={() => setViewHistoryClient(null)}
-                  className="px-8 py-3 bg-white dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 text-xs font-black uppercase tracking-widest rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all border border-gray-200 dark:border-zinc-700"
+                  className="px-6 sm:px-8 py-3 bg-white dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 text-xs font-black uppercase tracking-widest rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all border border-gray-200 dark:border-zinc-700 w-full sm:w-auto"
                  >
                   Close Ledger
                  </button>

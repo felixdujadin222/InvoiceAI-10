@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useLayoutEffect, useState } from 'react';
+﻿import React, { useMemo, useRef, useLayoutEffect, useState } from 'react';
 import { 
   XAxis, YAxis, CartesianGrid, Tooltip, 
   PieChart, Pie, Cell, AreaChart, Area 
@@ -19,7 +19,7 @@ interface ReportsProps {
 const COLORS = ['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#6366f1'];
 
 // ---------------------------------------------------------------------------
-// useMeasure – tracks an element's pixel dimensions via ResizeObserver.
+// useMeasure â€“ tracks an element's pixel dimensions via ResizeObserver.
 // Returns [ref, { width, height }].  width/height are 0 until the element
 // has been laid out in the browser.
 // ---------------------------------------------------------------------------
@@ -76,7 +76,7 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
 
   const currency = userSettings?.currency || 'USD';
   const getCurrencySymbol = (code: string) => {
-    const symbols: Record<string, string> = { 'USD': '$', 'EUR': '€', 'GBP': '£', 'NGN': '₦', 'KES': 'KSh' };
+    const symbols: Record<string, string> = { 'USD': '$', 'EUR': 'â‚¬', 'GBP': 'Â£', 'NGN': 'â‚¦', 'KES': 'KSh' };
     return symbols[code] || '$';
   };
 
@@ -162,9 +162,9 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
       </div>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-gray-100 dark:border-zinc-800 shadow-sm space-y-4">
-          <div className="w-12 h-12 bg-blue-50 dark:bg-zinc-800 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="bg-white dark:bg-zinc-900 p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border border-gray-100 dark:border-zinc-800 shadow-sm space-y-3 sm:space-y-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 dark:bg-zinc-800 text-blue-600 dark:text-blue-400 rounded-xl sm:rounded-2xl flex items-center justify-center">
             <TrendingUp size={24} />
           </div>
           <div>
@@ -174,8 +174,8 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
             </p>
           </div>
         </div>
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-gray-100 dark:border-zinc-800 shadow-sm space-y-4">
-          <div className="w-12 h-12 bg-green-50 dark:bg-zinc-800 text-green-600 dark:text-green-400 rounded-2xl flex items-center justify-center">
+        <div className="bg-white dark:bg-zinc-900 p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border border-gray-100 dark:border-zinc-800 shadow-sm space-y-3 sm:space-y-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-50 dark:bg-zinc-800 text-green-600 dark:text-green-400 rounded-xl sm:rounded-2xl flex items-center justify-center">
             <DollarSign size={24} />
           </div>
           <div>
@@ -185,8 +185,8 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
             </p>
           </div>
         </div>
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-gray-100 dark:border-zinc-800 shadow-sm space-y-4">
-          <div className="w-12 h-12 bg-orange-50 dark:bg-zinc-800 text-orange-600 dark:text-orange-400 rounded-2xl flex items-center justify-center">
+        <div className="bg-white dark:bg-zinc-900 p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border border-gray-100 dark:border-zinc-800 shadow-sm space-y-3 sm:space-y-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-50 dark:bg-zinc-800 text-orange-600 dark:text-orange-400 rounded-xl sm:rounded-2xl flex items-center justify-center">
             <Zap size={24} />
           </div>
           <div>
@@ -196,8 +196,8 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
             </p>
           </div>
         </div>
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-gray-100 dark:border-zinc-800 shadow-sm space-y-4">
-          <div className="w-12 h-12 bg-purple-50 dark:bg-zinc-800 text-purple-600 dark:text-purple-400 rounded-2xl flex items-center justify-center">
+        <div className="bg-white dark:bg-zinc-900 p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border border-gray-100 dark:border-zinc-800 shadow-sm space-y-3 sm:space-y-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-50 dark:bg-zinc-800 text-purple-600 dark:text-purple-400 rounded-xl sm:rounded-2xl flex items-center justify-center">
             <Target size={24} />
           </div>
           <div>
@@ -211,7 +211,7 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Revenue Trends */}
-        <div className="lg:col-span-2 bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-zinc-800 shadow-sm">
+        <div className="lg:col-span-2 bg-white dark:bg-zinc-900 p-4 sm:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] border border-gray-100 dark:border-zinc-800 shadow-sm">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white italic tracking-tight">Revenue Trends</h3>
@@ -222,8 +222,8 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
               Growth Chart
             </div>
           </div>
-          {/* Wrapper measured by useMeasure – chart only renders once dims are known */}
-          <div ref={areaRef} className="h-[300px] w-full">
+          {/* Wrapper measured by useMeasure â€“ chart only renders once dims are known */}
+          <div ref={areaRef} className="h-[200px] sm:h-[300px] w-full">
             {areaDims.width > 0 && areaDims.height > 0 && (
               <AreaChart
                 width={areaDims.width}
@@ -258,13 +258,13 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
         </div>
 
         {/* Status Distribution */}
-        <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-zinc-800 shadow-sm">
+        <div className="bg-white dark:bg-zinc-900 p-4 sm:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] border border-gray-100 dark:border-zinc-800 shadow-sm">
           <div className="mb-8 text-center sm:text-left">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white italic tracking-tight">Status Mix</h3>
             <p className="text-xs text-gray-400 dark:text-zinc-500 font-bold uppercase tracking-widest mt-1">Portfolio Breakdown</p>
           </div>
           {/* Wrapper measured by useMeasure */}
-          <div ref={pieRef} className="h-[250px] w-full">
+          <div ref={pieRef} className="h-[180px] sm:h-[250px] w-full">
             {pieDims.width > 0 && pieDims.height > 0 && (
               <PieChart width={pieDims.width} height={pieDims.height}>
                 <Pie
@@ -306,15 +306,15 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
       </div>
 
       {/* Recommendations / Insights */}
-      <div className="bg-gray-900 rounded-[2.5rem] p-6 sm:p-10 relative overflow-hidden text-white">
+      <div className="bg-gray-900 dark:bg-zinc-900 rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-10 relative overflow-hidden text-white">
         <div className="absolute -right-20 -top-20 w-64 h-64 bg-blue-600 rounded-full blur-[80px] opacity-30" />
-        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-          <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-blue-500/20">
-            <Zap size={40} className="animate-pulse" />
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-5 sm:gap-8">
+          <div className="w-14 h-14 sm:w-20 sm:h-20 bg-blue-600 rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-2xl shadow-blue-500/20 flex-shrink-0">
+            <Zap size={28} className="animate-pulse" />
           </div>
           <div className="flex-1 space-y-3">
-            <h4 className="text-2xl font-black tracking-tight leading-none italic uppercase">AI Growth Insights</h4>
-            <div className="text-gray-400 font-medium max-w-2xl leading-relaxed min-h-[3rem]">
+            <h4 className="text-lg sm:text-2xl font-black tracking-tight leading-none italic uppercase">AI Growth Insights</h4>
+            <div className="text-gray-300 dark:text-gray-400 font-medium max-w-2xl leading-relaxed min-h-[2rem] sm:min-h-[3rem] text-sm sm:text-base">
               {loadingAi ? (
                 <div className="flex items-center gap-2">
                   <Loader2 className="animate-spin text-blue-500" size={16} />
@@ -327,7 +327,7 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
           </div>
           <button 
             onClick={() => { /* TODO: wire to on-demand deep analysis run */ }}
-            className="px-8 py-4 bg-white text-gray-900 font-black rounded-2xl hover:bg-gray-100 transition-all uppercase tracking-widest text-xs"
+            className="px-5 py-3 sm:px-8 sm:py-4 bg-white text-gray-900 font-black rounded-xl sm:rounded-2xl hover:bg-gray-100 transition-all uppercase tracking-widest text-[10px] sm:text-xs w-full sm:w-auto text-center"
           >
             Run Deep Analysis
           </button>
@@ -336,3 +336,5 @@ export default function Reports({ invoices, userSettings }: ReportsProps) {
     </div>
   );
 }
+
+
